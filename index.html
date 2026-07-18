@@ -684,7 +684,7 @@ function renderBalanceSetting() {
         (i) => i.dataset.series,
       );
     }
-    function chart(canvas, data, series, colors, startAtZero = false) {
+    function chart(canvas, data, series, colors) {
       const dpr = devicePixelRatio || 1,
         r = canvas.getBoundingClientRect(),
         w = Math.max(320, r.width),
@@ -708,29 +708,31 @@ function renderBalanceSetting() {
   safeVals = vals.length ? vals : [0],
 
   rawMax = Math.max(...safeVals),
-  rawMin = Math.min(...safeVals),
 
-  /*
-    月別収支グラフは最低値に0円を含める。
-    資産推移グラフは実際の最低資産額を使う。
-  */
-  min = startAtZero
-    ? Math.min(rawMin, 0)
-    : rawMin,
+/*
+  縦軸を4段階に分ける。
+  1段あたり最低1円の整数にする。
+*/
+tickStep = Math.max(
+  1,
+  Math.ceil(rawMax / 4),
+),
 
-  range = Math.max(rawMax - min, 1),
-  hi = rawMax + range * 0.1,
+/*
+  最大値が一番上と同じになった場合は、
+  さらに1段分上へ広げる。
+*/
+hi =
+  rawMax >= tickStep * 4
+    ? tickStep * 5
+    : tickStep * 4,
 
-  /*
-    月別収支は0円スタート。
-    資産推移は最低資産額より10％分だけ下から始める。
-  */
-  lo =
-    startAtZero && rawMin >= 0
-      ? 0
-      : rawMin - range * 0.1,
+/*
+  どちらのグラフも0円スタート。
+*/
+lo = 0,
 
-  x = (i) =>
+x = (i) =>
           p.l + (data.length === 1 ? cw / 2 : (i * cw) / (data.length - 1)),
         y = (v) => p.t + ((hi - v) * ch) / (hi - lo);
       c.font = "12px system-ui";
@@ -778,28 +780,18 @@ function renderBalanceSetting() {
       });
     }
     function charts() {
-  /*
-    月別収支グラフ
-    trueを渡しているので0円スタート
-  */
   chart(
     $("flowChart"),
     flowData(),
     selected("flowControls"),
     FLOW,
-    true,
   );
 
-  /*
-    資産推移グラフ
-    falseを渡しているので、資産額の近辺からスタート
-  */
   chart(
     $("assetChart"),
     assetData(),
     selected("assetControls"),
     ASSET,
-    false,
   );
 }
     function accountName(id) {
