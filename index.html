@@ -330,14 +330,55 @@ canvas{
     <label><input type="checkbox" data-series="total" checked>総資産</label><label><input type="checkbox" data-series="ordinary" checked>普通預金</label><label><input type="checkbox" data-series="saving" checked>貯金用口座</label><label><input type="checkbox" data-series="wallet">財布</label><label><input type="checkbox" data-series="cashbox">貯金箱</label>
   </div><canvas id="assetChart"></canvas><p class="note">資産グラフは月末時点の残高です。</p></section>
 
-  <section class="card"><h2>現在の資産</h2><div class="asset-grid">
-    <div class="metric income wide"><span class="label">今月の収入</span><strong id="monthIncome">¥0</strong></div>
-    <div class="metric"><span class="label">財布の中身</span><strong id="walletBalance">¥0</strong></div>
-    <div class="metric"><span class="label">普通預金</span><strong id="ordinaryBalance">¥0</strong></div>
-    <div class="metric"><span class="label">貯金用口座</span><strong id="savingBalance">¥0</strong></div>
-    <div class="metric"><span class="label">貯金箱</span><strong id="cashboxBalance">¥0</strong></div>
-    <div class="metric wide"><span class="label">総資産</span><strong id="totalBalance">¥0</strong></div>
-  </div></section>
+  <section class="card">
+  <h2>現在の資産</h2>
+
+  <div>
+    <label for="assetDisplaySelect">表示する項目</label>
+    <select id="assetDisplaySelect">
+      <option value="">選択してください</option>
+      <option value="income">今月の収入</option>
+      <option value="wallet">財布の中身</option>
+      <option value="ordinary">普通預金</option>
+      <option value="saving">貯金用口座</option>
+      <option value="cashbox">貯金箱</option>
+      <option value="total">総資産</option>
+      <option value="all">すべて表示</option>
+    </select>
+  </div>
+
+  <div class="asset-grid" style="margin-top:12px;">
+    <div class="metric income wide asset-display hidden" data-asset="income">
+      <span class="label">今月の収入</span>
+      <strong id="monthIncome">¥0</strong>
+    </div>
+
+    <div class="metric asset-display hidden" data-asset="wallet">
+      <span class="label">財布の中身</span>
+      <strong id="walletBalance">¥0</strong>
+    </div>
+
+    <div class="metric asset-display hidden" data-asset="ordinary">
+      <span class="label">普通預金</span>
+      <strong id="ordinaryBalance">¥0</strong>
+    </div>
+
+    <div class="metric asset-display hidden" data-asset="saving">
+      <span class="label">貯金用口座</span>
+      <strong id="savingBalance">¥0</strong>
+    </div>
+
+    <div class="metric asset-display hidden" data-asset="cashbox">
+      <span class="label">貯金箱</span>
+      <strong id="cashboxBalance">¥0</strong>
+    </div>
+
+    <div class="metric wide asset-display hidden" data-asset="total">
+      <span class="label">総資産</span>
+      <strong id="totalBalance">¥0</strong>
+    </div>
+  </div>
+</section>
 
   <section class="card">
   <h2>初期残高の設定</h2>
@@ -863,6 +904,21 @@ for (let i = 0; i <= tickCount; i++) {
         })
         .join("");
     }
+
+    function renderAssetDisplay() {
+  const selectedAsset = $("assetDisplaySelect").value;
+
+  document
+    .querySelectorAll(".asset-display")
+    .forEach((element) => {
+      const shouldShow =
+        selectedAsset === "all" ||
+        element.dataset.asset === selectedAsset;
+
+      element.classList.toggle("hidden", !shouldShow);
+    });
+}
+    
     function render() {
       summary();
       entries();
@@ -982,7 +1038,10 @@ $("cancelBalances").addEventListener("click", () => {
 });
 
 $("saveBalances").addEventListener("click", saveBalances);
-
+$("assetDisplaySelect").addEventListener(
+  "change",
+  renderAssetDisplay,
+);
 $("exportButton").addEventListener("click", exportData);
     $("importButton").addEventListener("click", () => $("importFile").click());
     $("clearButton").addEventListener("click", clearAll);
@@ -1010,6 +1069,7 @@ balanceInputs();
 renderBalanceSetting();
 setType("expense");
 setJudge("必要");
+renderAssetDisplay();
 render();
   })();
 </script>
