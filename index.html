@@ -846,9 +846,21 @@ function renderBalanceSetting() {
           const x = JSON.parse(r.result);
           if (!x || !x.initialBalances || !Array.isArray(x.entries)) throw 0;
           state = x;
-          persist();
-          balanceInputs();
-          render();
+
+if (!state.initialBalanceSetAt) {
+  const hasInitialBalance = Object.values(state.initialBalances).some(
+    (value) => Number(value) !== 0,
+  );
+
+  state.initialBalanceSetAt = hasInitialBalance ? today() : null;
+}
+
+balanceEditOpen = false;
+
+persist();
+balanceInputs();
+renderBalanceSetting();
+render();
           alert("読み込みました。");
         } catch {
           alert("読み込めないファイルです。");
@@ -859,9 +871,12 @@ function renderBalanceSetting() {
     function clearAll() {
       if (!confirm("すべて削除します。元に戻せません。")) return;
       state = empty();
-      persist();
-      balanceInputs();
-      render();
+balanceEditOpen = false;
+
+persist();
+balanceInputs();
+renderBalanceSetting();
+render();
     }
     document
       .querySelectorAll(".type-button")
