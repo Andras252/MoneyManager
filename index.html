@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f8f5ef">
+  <title>浪費カット資産管理</title>
+<style>
+:root{
+  --bg:#f6f8f2;             /* 少しだけ緑寄りの背景 */
+  --card:#fff;
+  --text:#2f2b27;
+  --muted:#6e7168;          /* 少しだけ緑を含ませる */
+  --line:#d8dfd3;           /* 枠線も緑寄り */
+
+  --accent:#93ca76;         /* ←そのまま */
+  --soft:#bed3ca;           /* ←そのまま */
+
+  --danger:#b14d4d;         /* そのまま */
+  --good:#4f765c;           /* ←そのまま */
+
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  color:var(--text);
+  background:var(--bg)
+}
+
+main{
+  width:min(760px,100%);
+  margin:auto;
+  padding:16px 14px 80px
+}
+
+h1{margin:8px 0 4px;font-size:1.55rem}
+h2{margin:0 0 14px;font-size:1.05rem}
+
+.sub,.note{
+  color:var(--muted);
+  font-size:.82rem;
+  line-height:1.5
+}
+
+.card{
+  margin:14px 0;
+  padding:16px;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  box-shadow:0 8px 24px rgba(86,78,60,.08); /* 茶色をほんのり */
+}
+
+.grid,.summary-grid,.asset-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px
+}
+
+.full,.wide{grid-column:1/-1}
+
+label{
+  display:block;
+  margin-bottom:5px;
+  font-size:.82rem;
+  font-weight:700;
+  color:var(--muted)
+}
+
+input,
+select,
+button{
+  width:100%;
+  min-height:46px;
+  border-radius:12px;
+  font:inherit
+}
+
+input,
+select{
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--text);
+  padding:10px 12px;
+}
+
+input:focus,
+select:focus{
+  outline:2px solid rgba(147,202,118,.35);
+  border-color:var(--accent);
+}
+
+button{
+  border:0;
+  padding:10px 14px;
+  font-weight:800;
+  cursor:pointer;
+  background:var(--accent);
+  color:var(--text);      /* 黒文字 */
+}
+
+.secondary{
+  color:var(--text);
+  background:#e8e2d7;     /* 差し色の薄茶 */
+}
+
+.danger{
+  background:#f8e6e6;
+  color:var(--danger)
+}
+
+.segmented{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+  padding:5px;
+  border-radius:14px;
+  background:var(--soft)
+}
+
+.segmented button{
+  min-height:40px;
+  background:transparent;
+  color:var(--muted)
+}
+
+.segmented button.active{
+  background:#fff;
+  color:var(--text);
+  box-shadow:0 2px 9px rgba(86,78,60,.10);
+}
+
+.judge-buttons{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px
+}
+
+/* この色はそのまま */
+.judge-buttons button{
+  background:#c8d5bb;
+  color:var(--muted)
+}
+
+/* この色もそのまま */
+.judge-buttons button.active{
+  background:var(--accent);
+  color:var(--text);
+}
+
+.hidden{display:none!important}
+
+.metric{
+  padding:13px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fcfdfb;   /* 少しだけ緑寄り */
+}
+
+.metric strong{
+  display:block;
+  margin-top:4px;
+  font-size:1.35rem
+}
+
+.metric .label{
+  color:var(--muted);
+  font-size:.8rem
+}
+
+.waste strong{color:var(--danger)}
+.income strong{color:var(--good)}
+
+.chart-controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px 12px;
+  margin-bottom:10px
+}
+
+.chart-controls label{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  margin:0;
+  color:var(--text);
+  font-weight:600
+}
+
+.chart-controls input{
+  min-height:auto;
+  width:auto
+}
+
+canvas{
+  display:block;
+  width:100%;
+  height:240px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fff
+}
+
+.balance-row{
+  display:grid;
+  grid-template-columns:1fr 130px;
+  gap:8px;
+  align-items:end;
+  margin-bottom:10px
+}
+
+.entry{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  padding:12px 0;
+  border-bottom:1px solid var(--line)
+}
+
+.entry-title{font-weight:800}
+
+.entry-meta{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:.8rem;
+  line-height:1.45
+}
+
+.entry-amount{
+  font-weight:900;
+  white-space:nowrap
+}
+
+.entry-amount.expense{color:var(--danger)}
+.entry-amount.income{color:var(--good)}
+
+.entry button{
+  width:auto;
+  min-height:34px;
+  margin-top:7px;
+  padding:4px 10px;
+  font-size:.76rem
+}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  padding:18px
+}
+
+.actions{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px
+}
+
+@media(max-width:560px){
+  .grid,
+  .summary-grid,
+  .asset-grid{
+    grid-template-columns:1fr
+  }
+
+  .full,.wide{
+    grid-column:auto
+  }
+
+  .balance-row{
+    grid-template-columns:1fr 110px
+  }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>浪費カット資産管理</h1>
+  <p class="sub">支出・入金・振替を記録して、今月の使い方と資産の増減を見る。</p>
+
+  <section class="card">
+    <h2>入力</h2>
+    <div class="segmented">
+      <button type="button" class="type-button active" data-type="expense">支出</button>
+      <button type="button" class="type-button" data-type="income">入金</button>
+      <button type="button" class="type-button" data-type="transfer">振替</button>
+    </div>
+    <div class="grid" style="margin-top:14px">
+      <div><label for="date">日付</label><input id="date" type="date"></div>
+      <div><label for="amount">金額</label><input id="amount" type="number" min="1" inputmode="numeric" placeholder="例：1200"></div>
+      <div class="full"><label for="shop">店名・メモ</label><input id="shop" type="text" placeholder="例：ローソン"></div>
+
+      <div class="expense-only"><label for="category">カテゴリ</label><select id="category"><option>食費</option><option>サブスク</option><option>趣味・課金</option><option>保険</option><option>個人年金</option><option>携帯</option><option>その他</option></select></div>
+      <div class="expense-only"><label for="expenseAccount">支払元</label><select id="expenseAccount"></select></div>
+      <div class="full expense-only"><label>判定</label><div class="judge-buttons"><button type="button" class="judge-button active" data-judge="必要">必要</button><button type="button" class="judge-button" data-judge="経費">経費</button><button type="button" class="judge-button" data-judge="浪費">浪費</button></div></div>
+
+      <div class="income-only hidden"><label for="incomeCategory">入金カテゴリ</label><select id="incomeCategory"><option>給料</option><option>BOOTH</option><option>臨時収入</option><option>返金</option><option>その他</option></select></div>
+      <div class="income-only hidden"><label for="incomeAccount">入金先</label><select id="incomeAccount"></select></div>
+
+      <div class="transfer-only hidden"><label for="fromAccount">移動元</label><select id="fromAccount"></select></div>
+      <div class="transfer-only hidden"><label for="toAccount">移動先</label><select id="toAccount"></select></div>
+
+      <div class="full"><button type="button" id="saveButton">支出を保存</button></div>
+    </div>
+  </section>
+
+  <section class="card"><h2>今月の浪費／支出</h2><div class="summary-grid">
+    <div class="metric waste"><span class="label">浪費</span><strong id="monthWaste">¥0</strong></div>
+    <div class="metric"><span class="label">支出合計</span><strong id="monthExpense">¥0</strong></div>
+    <div class="metric"><span class="label">必要</span><strong id="monthNeed">¥0</strong></div>
+    <div class="metric"><span class="label">経費</span><strong id="monthCost">¥0</strong></div>
+  </div></section>
+
+  <section class="card"><h2>月別収支グラフ</h2><div class="chart-controls" id="flowControls">
+    <label><input type="checkbox" data-series="income" checked>収入</label><label><input type="checkbox" data-series="expense" checked>支出</label><label><input type="checkbox" data-series="waste" checked>浪費</label><label><input type="checkbox" data-series="need">必要</label><label><input type="checkbox" data-series="cost">経費</label>
+  </div><canvas id="flowChart"></canvas></section>
+
+  <section class="card"><h2>資産推移グラフ</h2><div class="chart-controls" id="assetControls">
+    <label><input type="checkbox" data-series="total" checked>総資産</label><label><input type="checkbox" data-series="ordinary" checked>普通預金</label><label><input type="checkbox" data-series="saving" checked>貯金用口座</label><label><input type="checkbox" data-series="wallet">財布</label><label><input type="checkbox" data-series="cashbox">貯金箱</label>
+  </div><canvas id="assetChart"></canvas><p class="note">資産グラフは月末時点の残高です。</p></section>
+
+  <section class="card"><h2>現在の資産</h2><div class="asset-grid">
+    <div class="metric income wide"><span class="label">今月の収入</span><strong id="monthIncome">¥0</strong></div>
+    <div class="metric"><span class="label">財布の中身</span><strong id="walletBalance">¥0</strong></div>
+    <div class="metric"><span class="label">普通預金</span><strong id="ordinaryBalance">¥0</strong></div>
+    <div class="metric"><span class="label">貯金用口座</span><strong id="savingBalance">¥0</strong></div>
+    <div class="metric"><span class="label">貯金箱</span><strong id="cashboxBalance">¥0</strong></div>
+    <div class="metric wide"><span class="label">総資産</span><strong id="totalBalance">¥0</strong></div>
+  </div></section>
+
+  <section class="card"><h2>初期残高の設定</h2><p class="sub">このアプリを使い始める時点の金額を入れる。</p><div id="balanceInputs"></div><button type="button" id="saveBalances">初期残高を保存</button></section>
+  <section class="card"><h2>最近の記録</h2><div id="entryList"></div></section>
+  <section class="card"><h2>バックアップ</h2><div class="actions"><button type="button" class="secondary" id="exportButton">書き出す</button><button type="button" class="secondary" id="importButton">読み込む</button><button type="button" class="danger" id="clearButton">全削除</button></div><input id="importFile" type="file" accept="application/json" class="hidden"><p class="note">データはこの端末のブラウザ内に保存されます。</p></section>
+</main>
+<script>
+  (() => {
+    "use strict";
+    const KEY = "akira_asset_manager_v1";
+    const ACCOUNTS = [
+      { id: "wallet", name: "財布" },
+      { id: "ordinary", name: "普通預金" },
+      { id: "saving", name: "貯金用口座" },
+      { id: "cashbox", name: "貯金箱" },
+    ];
+    // 月別収支グラフの線・点の色
+    const FLOW = {
+      income: "#4f765c",
+      expense: "#8f6c52",
+      waste: "#b14d4d",
+      need: "#577591",
+      cost: "#8b6f9a",
+    };
+    // 資産推移グラフの線・点の色
+    const ASSET = {
+      total: "#2f2b27",
+      wallet: "#b78b42",
+      ordinary: "#577591",
+      saving: "#4f765c",
+      cashbox: "#8b6f9a",
+    };
+    const empty = () => ({
+      initialBalances: { wallet: 0, ordinary: 0, saving: 0, cashbox: 0 },
+      entries: [],
+    });
+    let state = load(),
+      currentType = "expense",
+      currentJudge = "必要";
+    const $ = (id) => document.getElementById(id);
+    const yen = (v) =>
+      new Intl.NumberFormat("ja-JP", {
+        style: "currency",
+        currency: "JPY",
+        maximumFractionDigits: 0,
+      }).format(Number(v) || 0);
+    function today(d = new Date()) {
+      const o = d.getTimezoneOffset() * 60000;
+      return new Date(d - o).toISOString().slice(0, 10);
+    }
+    function load() {
+      try {
+        const s = JSON.parse(localStorage.getItem(KEY));
+        return s && s.initialBalances && Array.isArray(s.entries) ? s : empty();
+      } catch {
+        return empty();
+      }
+    }
+    function persist() {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    }
+    function fill(sel) {
+      sel.innerHTML = ACCOUNTS.map(
+        (a) => `<option value="${a.id}">${a.name}</option>`,
+      ).join("");
+    }
+    function init() {
+      $("date").value = today();
+      ["expenseAccount", "incomeAccount", "fromAccount", "toAccount"].forEach(
+        (id) => fill($(id)),
+      );
+      $("expenseAccount").value = "wallet";
+      $("incomeAccount").value = "ordinary";
+      $("fromAccount").value = "ordinary";
+      $("toAccount").value = "saving";
+    }
+    function balanceInputs() {
+      $("balanceInputs").innerHTML = ACCOUNTS.map(
+        (a) =>
+          `<div class="balance-row"><div><label for="balance-${a.id}">${a.name}</label><input id="balance-${a.id}" type="number" inputmode="numeric" value="${Number(state.initialBalances[a.id]) || 0}"></div><strong id="preview-${a.id}">${yen(balances()[a.id])}</strong></div>`,
+      ).join("");
+    }
+    function setType(t) {
+      currentType = t;
+      document
+        .querySelectorAll(".type-button")
+        .forEach((b) => b.classList.toggle("active", b.dataset.type === t));
+      document
+        .querySelectorAll(".expense-only")
+        .forEach((e) => e.classList.toggle("hidden", t !== "expense"));
+      document
+        .querySelectorAll(".income-only")
+        .forEach((e) => e.classList.toggle("hidden", t !== "income"));
+      document
+        .querySelectorAll(".transfer-only")
+        .forEach((e) => e.classList.toggle("hidden", t !== "transfer"));
+      $("saveButton").textContent = {
+        expense: "支出を保存",
+        income: "入金を保存",
+        transfer: "振替を保存",
+      }[t];
+    }
+    function setJudge(j) {
+      currentJudge = j;
+      document
+        .querySelectorAll(".judge-button")
+        .forEach((b) => b.classList.toggle("active", b.dataset.judge === j));
+    }
+    function saveEntry() {
+      const amount = Number($("amount").value),
+        date = $("date").value,
+        memo = $("shop").value.trim();
+      if (!date) return alert("日付を入れてください。");
+      if (!Number.isFinite(amount) || amount <= 0)
+        return alert("金額を1円以上で入れてください。");
+      const e = {
+        id: crypto.randomUUID
+          ? crypto.randomUUID()
+          : Date.now() + "-" + Math.random(),
+        type: currentType,
+        amount,
+        date,
+        memo,
+        createdAt: new Date().toISOString(),
+      };
+      if (currentType === "expense") {
+        e.category = $("category").value;
+        e.judge = currentJudge;
+        e.account = $("expenseAccount").value;
+      }
+      if (currentType === "income") {
+        e.category = $("incomeCategory").value;
+        e.account = $("incomeAccount").value;
+      }
+      if (currentType === "transfer") {
+        e.fromAccount = $("fromAccount").value;
+        e.toAccount = $("toAccount").value;
+        if (e.fromAccount === e.toAccount)
+          return alert("移動元と移動先は別にしてください。");
+      }
+      state.entries.unshift(e);
+      persist();
+      $("amount").value = "";
+      $("shop").value = "";
+      render();
+    }
+    function balances(entries = state.entries) {
+      const b = { ...state.initialBalances };
+      [...entries]
+        .sort(
+          (a, c) =>
+            a.date.localeCompare(c.date) ||
+            a.createdAt.localeCompare(c.createdAt),
+        )
+        .forEach((e) => {
+          if (e.type === "expense")
+            b[e.account] = (b[e.account] || 0) - e.amount;
+          if (e.type === "income")
+            b[e.account] = (b[e.account] || 0) + e.amount;
+          if (e.type === "transfer") {
+            b[e.fromAccount] = (b[e.fromAccount] || 0) - e.amount;
+            b[e.toAccount] = (b[e.toAccount] || 0) + e.amount;
+          }
+        });
+      return b;
+    }
+    const monthKey = (d) => d.slice(0, 7);
+    function months(n = 6) {
+      const out = [],
+        now = new Date();
+      for (let i = n - 1; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        out.push({
+          key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+          label: `${d.getMonth() + 1}月`,
+        });
+      }
+      return out;
+    }
+    function flowData() {
+      return months().map((m) => {
+        const es = state.entries.filter((e) => monthKey(e.date) === m.key),
+          sum = (f) => es.filter(f).reduce((s, e) => s + e.amount, 0);
+        return {
+          label: m.label,
+          income: sum((e) => e.type === "income"),
+          expense: sum((e) => e.type === "expense"),
+          waste: sum((e) => e.type === "expense" && e.judge === "浪費"),
+          need: sum((e) => e.type === "expense" && e.judge === "必要"),
+          cost: sum((e) => e.type === "expense" && e.judge === "経費"),
+        };
+      });
+    }
+    function assetData() {
+      return months().map((m) => {
+        const [y, mo] = m.key.split("-").map(Number),
+          cut = today(new Date(y, mo, 0, 23, 59, 59)),
+          b = balances(state.entries.filter((e) => e.date <= cut));
+        return {
+          label: m.label,
+          ...b,
+          total: Object.values(b).reduce((s, v) => s + v, 0),
+        };
+      });
+    }
+    function summary() {
+      const mk = today().slice(0, 7),
+        es = state.entries.filter((e) => monthKey(e.date) === mk),
+        sum = (f) => es.filter(f).reduce((s, e) => s + e.amount, 0);
+      $("monthIncome").textContent = yen(sum((e) => e.type === "income"));
+      $("monthExpense").textContent = yen(sum((e) => e.type === "expense"));
+      $("monthWaste").textContent = yen(
+        sum((e) => e.type === "expense" && e.judge === "浪費"),
+      );
+      $("monthNeed").textContent = yen(
+        sum((e) => e.type === "expense" && e.judge === "必要"),
+      );
+      $("monthCost").textContent = yen(
+        sum((e) => e.type === "expense" && e.judge === "経費"),
+      );
+      const b = balances();
+      $("walletBalance").textContent = yen(b.wallet);
+      $("ordinaryBalance").textContent = yen(b.ordinary);
+      $("savingBalance").textContent = yen(b.saving);
+      $("cashboxBalance").textContent = yen(b.cashbox);
+      $("totalBalance").textContent = yen(
+        Object.values(b).reduce((s, v) => s + v, 0),
+      );
+      ACCOUNTS.forEach((a) => {
+        const p = $("preview-" + a.id);
+        if (p) p.textContent = yen(b[a.id]);
+      });
+    }
+    function compact(v) {
+      const a = Math.abs(v);
+      if (a >= 1000000) return (v / 1000000).toFixed(1) + "百万円";
+      if (a >= 10000) return Math.round(v / 10000) + "万円";
+      return Math.round(v).toLocaleString("ja-JP") + "円";
+    }
+    function selected(id) {
+      return [...document.querySelectorAll(`#${id} input:checked`)].map(
+        (i) => i.dataset.series,
+      );
+    }
+    function chart(canvas, data, series, colors) {
+      const dpr = devicePixelRatio || 1,
+        r = canvas.getBoundingClientRect(),
+        w = Math.max(320, r.width),
+        h = 240,
+        p = { t: 18, r: 16, b: 38, l: 58 };
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      const c = canvas.getContext("2d");
+      c.scale(dpr, dpr);
+      c.clearRect(0, 0, w, h);
+      const cw = w - p.l - p.r,
+        ch = h - p.t - p.b,
+        vals = data.flatMap((row) => series.map((s) => Number(row[s]) || 0)),
+        max = Math.max(...vals, 1),
+        min = Math.min(...vals, 0),
+        range = Math.max(max - min, 1),
+        hi = max + range * 0.1,
+        lo = min - range * 0.1,
+        x = (i) =>
+          p.l + (data.length === 1 ? cw / 2 : (i * cw) / (data.length - 1)),
+        y = (v) => p.t + ((hi - v) * ch) / (hi - lo);
+      c.font = "12px system-ui";
+      c.lineWidth = 1; // グラフ内の補助線と軸ラベルの色
+      c.strokeStyle = "#e6dfd6";
+      c.fillStyle = "#77716a";
+      for (let i = 0; i <= 4; i++) {
+        const v = hi - ((hi - lo) * i) / 4,
+          yy = p.t + (ch * i) / 4;
+        c.beginPath();
+        c.moveTo(p.l, yy);
+        c.lineTo(w - p.r, yy);
+        c.stroke();
+        c.textAlign = "right";
+        c.textBaseline = "middle";
+        c.fillText(compact(v), p.l - 8, yy);
+      }
+      data.forEach((row, i) => {
+        c.textAlign = "center";
+        c.textBaseline = "top";
+        c.fillText(row.label, x(i), h - p.b + 10);
+      });
+      if (!series.length) {
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        c.fillText("表示する項目を選んでください", w / 2, h / 2);
+        return;
+      }
+      series.forEach((s) => {
+        c.strokeStyle = colors[s];
+        c.fillStyle = colors[s];
+        c.lineWidth = 2.5;
+        c.beginPath();
+        data.forEach((row, i) => {
+          const px = x(i),
+            py = y(Number(row[s]) || 0);
+          i ? c.lineTo(px, py) : c.moveTo(px, py);
+        });
+        c.stroke();
+        data.forEach((row, i) => {
+          c.beginPath();
+          c.arc(x(i), y(Number(row[s]) || 0), 3.5, 0, Math.PI * 2);
+          c.fill();
+        });
+      });
+    }
+    function charts() {
+      chart($("flowChart"), flowData(), selected("flowControls"), FLOW);
+      chart($("assetChart"), assetData(), selected("assetControls"), ASSET);
+    }
+    function accountName(id) {
+      return ACCOUNTS.find((a) => a.id === id)?.name || id;
+    }
+    function esc(v) {
+      return String(v)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+    function entries() {
+      const list = $("entryList"),
+        es = state.entries.slice(0, 30);
+      if (!es.length) {
+        list.innerHTML = '<div class="empty">まだ記録がありません。</div>';
+        return;
+      }
+      list.innerHTML = es
+        .map((e) => {
+          const title = e.memo || e.category || "振替";
+          let meta = e.date + " ・ ";
+          if (e.type === "expense")
+            meta += `${e.category} ・ ${e.judge} ・ ${accountName(e.account)}から`;
+          if (e.type === "income")
+            meta += `${e.category} ・ ${accountName(e.account)}へ`;
+          if (e.type === "transfer")
+            meta += `${accountName(e.fromAccount)} → ${accountName(e.toAccount)}`;
+          const cls =
+              e.type === "expense"
+                ? "expense"
+                : e.type === "income"
+                  ? "income"
+                  : "",
+            sign = e.type === "expense" ? "−" : e.type === "income" ? "＋" : "";
+          return `<div class="entry"><div><div class="entry-title">${esc(title)}</div><div class="entry-meta">${esc(meta)}</div><button type="button" class="danger delete-entry" data-id="${e.id}">削除</button></div><div class="entry-amount ${cls}">${sign}${yen(e.amount)}</div></div>`;
+        })
+        .join("");
+    }
+    function render() {
+      summary();
+      entries();
+      charts();
+    }
+    function saveBalances() {
+      ACCOUNTS.forEach(
+        (a) =>
+          (state.initialBalances[a.id] =
+            Number($("balance-" + a.id).value) || 0),
+      );
+      persist();
+      render();
+      alert("初期残高を保存しました。");
+    }
+    function exportData() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], {
+          type: "application/json",
+        }),
+        url = URL.createObjectURL(blob),
+        a = document.createElement("a");
+      a.href = url;
+      a.download = `資産管理バックアップ_${today()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    function importData(file) {
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const x = JSON.parse(r.result);
+          if (!x || !x.initialBalances || !Array.isArray(x.entries)) throw 0;
+          state = x;
+          persist();
+          balanceInputs();
+          render();
+          alert("読み込みました。");
+        } catch {
+          alert("読み込めないファイルです。");
+        }
+      };
+      r.readAsText(file);
+    }
+    function clearAll() {
+      if (!confirm("すべて削除します。元に戻せません。")) return;
+      state = empty();
+      persist();
+      balanceInputs();
+      render();
+    }
+    document
+      .querySelectorAll(".type-button")
+      .forEach((b) =>
+        b.addEventListener("click", () => setType(b.dataset.type)),
+      );
+    document
+      .querySelectorAll(".judge-button")
+      .forEach((b) =>
+        b.addEventListener("click", () => setJudge(b.dataset.judge)),
+      );
+    $("saveButton").addEventListener("click", saveEntry);
+    $("saveBalances").addEventListener("click", saveBalances);
+    $("exportButton").addEventListener("click", exportData);
+    $("importButton").addEventListener("click", () => $("importFile").click());
+    $("clearButton").addEventListener("click", clearAll);
+    $("importFile").addEventListener("change", (e) => {
+      const f = e.target.files?.[0];
+      if (f) importData(f);
+      e.target.value = "";
+    });
+    $("entryList").addEventListener("click", (e) => {
+      const b = e.target.closest(".delete-entry");
+      if (!b || !confirm("この記録を削除しますか？")) return;
+      state.entries = state.entries.filter((x) => x.id !== b.dataset.id);
+      persist();
+      render();
+    });
+    document
+      .querySelectorAll(".chart-controls input")
+      .forEach((i) => i.addEventListener("change", charts));
+    window.addEventListener("resize", () => {
+      clearTimeout(window._rt);
+      window._rt = setTimeout(charts, 120);
+    });
+    init();
+    balanceInputs();
+    setType("expense");
+    setJudge("必要");
+    render();
+  })();
+</script>
+
+</body>
+</html>
