@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f8f5ef">
-  <title>浪費カット資産管理</title>
+  <title>浪費カットで資産管理！</title>
   <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -117,7 +117,7 @@ button{
 
 .segmented{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(4,1fr);
   gap:6px;
   padding:5px;
   border-radius:14px;
@@ -316,21 +316,48 @@ canvas{
 </head>
 <body>
 <main>
-  <h1>浪費カット資産管理</h1>
-  <p class="sub">支出・入金・振替を記録して、今月の使い方と資産の増減を見る。</p>
+  <h1>浪費カットで資産管理！</h1>
+  <p class="sub">支出・入金・振替を記録して、今月の使い方と資産の増減を見ていこう🦊</p>
 
   <section class="card">
     <h2>入力</h2>
     <div class="segmented">
-      <button type="button" class="type-button active" data-type="expense">支出</button>
-      <button type="button" class="type-button" data-type="income">入金</button>
-      <button type="button" class="type-button" data-type="transfer">振替</button>
-    </div>
-    <div class="grid" style="margin-top:14px">
-      <div><label for="date">日付</label><input id="date" type="date"></div>
-      <div><label for="amount">金額</label><input id="amount" type="number" min="1" inputmode="numeric" placeholder="例：1200"></div>
-      <div class="full"><label for="shop">店名や詳細などのメモ</label><input id="shop" type="text" placeholder="例：ローソン"></div>
+  <button type="button" class="type-button active" data-type="expense">
+    支出
+  </button>
 
+  <button type="button" class="type-button" data-type="income">
+    入金
+  </button>
+
+  <button type="button" class="type-button" data-type="transfer">
+    振替
+  </button>
+
+  <button type="button" class="type-button" data-type="recurring">
+    固定費
+  </button>
+</div>
+    <div class="grid" style="margin-top:14px">
+      <div class="normal-entry-only">
+  <label for="date">日付</label>
+  <input id="date" type="date">
+</div>
+      <div>
+  <label for="amount">金額</label>
+  <input
+    id="amount"
+    type="number"
+    min="1"
+    inputmode="numeric"
+    placeholder="例：1200"
+  >
+</div>
+
+<div class="full">
+  <label for="shop" id="shopLabel">店名や詳細などのメモ</label>
+  <input id="shop" type="text" placeholder="例：ローソン">
+</div>
       <div class="expense-only"><label for="category">カテゴリ</label><select id="category"><option>食費</option><option>サブスク</option><option>趣味・課金</option><option>保険</option><option>個人年金</option><option>携帯</option><option>その他</option></select></div>
       <div class="expense-only"><label for="expenseAccount">支払元</label><select id="expenseAccount"></select></div>
       <div class="full expense-only"><label>判定</label><div class="judge-buttons"><button type="button" class="judge-button active" data-judge="必要">必要</button><button type="button" class="judge-button" data-judge="経費">経費</button><button type="button" class="judge-button" data-judge="浪費">浪費</button></div></div>
@@ -338,10 +365,102 @@ canvas{
       <div class="income-only hidden"><label for="incomeCategory">入金カテゴリ</label><select id="incomeCategory"><option>給料</option><option>BOOTH</option><option>臨時収入</option><option>返金</option><option>その他</option></select></div>
       <div class="income-only hidden"><label for="incomeAccount">入金先</label><select id="incomeAccount"></select></div>
 
-      <div class="transfer-only hidden"><label for="fromAccount">移動元</label><select id="fromAccount"></select></div>
-      <div class="transfer-only hidden"><label for="toAccount">移動先</label><select id="toAccount"></select></div>
+<div class="transfer-only hidden">
+  <label for="fromAccount">移動元</label>
+  <select id="fromAccount"></select>
+</div>
 
-      <div class="full"><button type="button" id="saveButton">支出を保存</button></div>
+<div class="transfer-only hidden">
+  <label for="toAccount">移動先</label>
+  <select id="toAccount"></select>
+</div>
+
+<!-- 固定費専用 -->
+<div class="recurring-only hidden">
+  <label for="recurringFrequency">支払い周期</label>
+  <select id="recurringFrequency">
+    <option value="monthly">毎月</option>
+    <option value="yearly">毎年</option>
+  </select>
+</div>
+
+<div class="recurring-only recurring-monthly hidden">
+  <label for="recurringDay">毎月の支払日</label>
+  <select id="recurringDay"></select>
+</div>
+
+<div class="recurring-only recurring-yearly hidden">
+  <label for="recurringMonth">支払月</label>
+  <select id="recurringMonth"></select>
+</div>
+
+<div class="recurring-only recurring-yearly hidden">
+  <label for="recurringYearlyDay">支払日</label>
+  <select id="recurringYearlyDay"></select>
+</div>
+
+<div class="recurring-only hidden">
+  <label for="recurringCategory">カテゴリ</label>
+  <select id="recurringCategory">
+    <option>食費</option>
+    <option>サブスク</option>
+    <option>趣味・課金</option>
+    <option selected>保険</option>
+    <option>個人年金</option>
+    <option>携帯</option>
+    <option>その他</option>
+  </select>
+</div>
+
+<div class="recurring-only hidden">
+  <label for="recurringAccount">支払元</label>
+  <select id="recurringAccount"></select>
+</div>
+
+<div class="full recurring-only hidden">
+  <label>判定</label>
+
+  <div class="judge-buttons">
+    <button
+      type="button"
+      class="recurring-judge-button"
+      data-recurring-judge="必要"
+    >
+      必要
+    </button>
+
+    <button
+      type="button"
+      class="recurring-judge-button active"
+      data-recurring-judge="経費"
+    >
+      経費
+    </button>
+
+    <button
+      type="button"
+      class="recurring-judge-button"
+      data-recurring-judge="浪費"
+    >
+      浪費
+    </button>
+  </div>
+</div>
+
+<div class="recurring-only hidden">
+  <label for="recurringStartMonth">開始年月・任意</label>
+  <input id="recurringStartMonth" type="month">
+</div>
+
+<div class="recurring-only hidden">
+  <label for="recurringEndMonth">終了年月・任意</label>
+  <input id="recurringEndMonth" type="month">
+</div>
+
+<div class="full">
+  <button type="button" id="saveButton">支出を保存</button>
+</div>
+
     </div>
   </section>
 
@@ -478,12 +597,21 @@ const empty = () => ({
     saving: 0,
     cashbox: 0,
   },
+
   initialBalanceSetAt: null,
+
   entries: [],
+
+  /*
+    毎月・毎年の固定費設定を保存する場所。
+    実際の支出記録とは別に持つ。
+  */
+  recurringExpenses: [],
 });
 let state = load(),
   currentType = "expense",
   currentJudge = "必要",
+  currentRecurringJudge = "経費",
   balanceEditOpen = false;
     const $ = (id) => document.getElementById(id);
     const yen = (v) =>
@@ -503,6 +631,14 @@ let state = load(),
     if (!s || !s.initialBalances || !Array.isArray(s.entries)) {
       return empty();
     }
+    /*
+  固定費機能を追加する前の保存データには
+  recurringExpensesが存在しないため、空配列を補う。
+*/
+if (!Array.isArray(s.recurringExpenses)) {
+  s.recurringExpenses = [];
+  localStorage.setItem(KEY, JSON.stringify(s));
+}
 
     /*
       以前のバージョンですでに初期残高を入力していた場合、
@@ -531,15 +667,61 @@ let state = load(),
       ).join("");
     }
     function init() {
-      $("date").value = today();
-      ["expenseAccount", "incomeAccount", "fromAccount", "toAccount"].forEach(
-        (id) => fill($(id)),
-      );
-      $("expenseAccount").value = "wallet";
-      $("incomeAccount").value = "ordinary";
-      $("fromAccount").value = "ordinary";
-      $("toAccount").value = "saving";
-    }
+  $("date").value = today();
+
+  [
+    "expenseAccount",
+    "incomeAccount",
+    "fromAccount",
+    "toAccount",
+    "recurringAccount",
+  ].forEach((id) => fill($(id)));
+
+  $("expenseAccount").value = "wallet";
+  $("incomeAccount").value = "ordinary";
+  $("fromAccount").value = "ordinary";
+  $("toAccount").value = "saving";
+
+  /*
+    固定費は普通預金からの引き落としが多そうなので、
+    初期値を普通預金にする。
+  */
+  $("recurringAccount").value = "ordinary";
+
+  /*
+    1日から31日までの選択肢。
+  */
+  const days = Array.from(
+    { length: 31 },
+    (_, index) => index + 1,
+  );
+
+  $("recurringDay").innerHTML = days
+    .map((day) => `<option value="${day}">${day}日</option>`)
+    .join("");
+
+  $("recurringYearlyDay").innerHTML =
+    $("recurringDay").innerHTML;
+
+  /*
+    1月から12月までの選択肢。
+  */
+  $("recurringMonth").innerHTML = Array.from(
+    { length: 12 },
+    (_, index) => index + 1,
+  )
+    .map(
+      (month) =>
+        `<option value="${month}">${month}月</option>`,
+    )
+    .join("");
+
+  /*
+    とりあえず27日を初期値にしておく。
+  */
+  $("recurringDay").value = "27";
+  $("recurringYearlyDay").value = "27";
+}
     function balanceInputs() {
       $("balanceInputs").innerHTML = ACCOUNTS.map(
         (a) =>
@@ -591,71 +773,229 @@ function renderBalanceSetting() {
     !isSet,
   );
 }
-    
+
+    function renderRecurringFrequency() {
+  const frequency = $("recurringFrequency").value;
+
+  document
+    .querySelectorAll(".recurring-monthly")
+    .forEach((element) => {
+      element.classList.toggle(
+        "hidden",
+        currentType !== "recurring" ||
+          frequency !== "monthly",
+      );
+    });
+
+  document
+    .querySelectorAll(".recurring-yearly")
+    .forEach((element) => {
+      element.classList.toggle(
+        "hidden",
+        currentType !== "recurring" ||
+          frequency !== "yearly",
+      );
+    });
+}
     function setType(t) {
       currentType = t;
+
       document
         .querySelectorAll(".type-button")
-        .forEach((b) => b.classList.toggle("active", b.dataset.type === t));
+        .forEach((button) => {
+          button.classList.toggle(
+            "active",
+            button.dataset.type === t,
+          );
+        });
+
       document
         .querySelectorAll(".expense-only")
-        .forEach((e) => e.classList.toggle("hidden", t !== "expense"));
+        .forEach((element) => {
+          element.classList.toggle("hidden", t !== "expense");
+        });
+
       document
         .querySelectorAll(".income-only")
-        .forEach((e) => e.classList.toggle("hidden", t !== "income"));
+        .forEach((element) => {
+          element.classList.toggle("hidden", t !== "income");
+        });
+
       document
         .querySelectorAll(".transfer-only")
-        .forEach((e) => e.classList.toggle("hidden", t !== "transfer"));
+        .forEach((element) => {
+          element.classList.toggle("hidden", t !== "transfer");
+        });
+
+      document
+        .querySelectorAll(".recurring-only")
+        .forEach((element) => {
+          element.classList.toggle("hidden", t !== "recurring");
+        });
+
+      document
+        .querySelectorAll(".normal-entry-only")
+        .forEach((element) => {
+          element.classList.toggle("hidden", t === "recurring");
+        });
+
+      $("shopLabel").textContent =
+        t === "recurring"
+          ? "固定費の名称"
+          : "店名や詳細などのメモ";
+
+      $("shop").placeholder =
+        t === "recurring"
+          ? "例：アフラック"
+          : "例：ローソン";
+
       $("saveButton").textContent = {
         expense: "支出を保存",
         income: "入金を保存",
         transfer: "振替を保存",
+        recurring: "固定費を登録",
       }[t];
+
+      renderRecurringFrequency();
     }
+
     function setJudge(j) {
       currentJudge = j;
       document
         .querySelectorAll(".judge-button")
         .forEach((b) => b.classList.toggle("active", b.dataset.judge === j));
     }
+function setRecurringJudge(judge) {
+  currentRecurringJudge = judge;
+
+  document
+    .querySelectorAll(".recurring-judge-button")
+    .forEach((button) => {
+      button.classList.toggle(
+        "active",
+        button.dataset.recurringJudge === judge,
+      );
+    });
+}
+    function saveRecurringExpense() {
+  const name = $("shop").value.trim();
+  const amount = Number($("amount").value);
+  const frequency = $("recurringFrequency").value;
+
+  if (!name) {
+    return alert("固定費の名称を入れてください。");
+  }
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return alert("金額を1円以上で入れてください。");
+  }
+
+  const recurringExpense = {
+    id:
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : Date.now() + "-" + Math.random(),
+
+    name,
+    amount,
+
+    frequency,
+
+    /*
+      毎月なら月は不要。
+      毎年なら支払月を保存する。
+    */
+    paymentMonth:
+      frequency === "yearly"
+        ? Number($("recurringMonth").value)
+        : null,
+
+    paymentDay:
+      frequency === "monthly"
+        ? Number($("recurringDay").value)
+        : Number($("recurringYearlyDay").value),
+
+    category: $("recurringCategory").value,
+    judge: currentRecurringJudge,
+    account: $("recurringAccount").value,
+
+    /*
+      空欄なら、すでに支払い中・終了予定なし。
+    */
+    startMonth:
+      $("recurringStartMonth").value || null,
+
+    endMonth:
+      $("recurringEndMonth").value || null,
+
+    enabled: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  state.recurringExpenses.unshift(recurringExpense);
+
+  persist();
+
+  $("amount").value = "";
+  $("shop").value = "";
+  $("recurringStartMonth").value = "";
+  $("recurringEndMonth").value = "";
+
+  alert("固定費を登録しました。");
+}
     function saveEntry() {
-      const amount = Number($("amount").value),
-        date = $("date").value,
-        memo = $("shop").value.trim();
+      if (currentType === "recurring") {
+        saveRecurringExpense();
+        return;
+      }
+
+      const amount = Number($("amount").value);
+      const date = $("date").value;
+      const memo = $("shop").value.trim();
+
       if (!date) return alert("日付を入れてください。");
-      if (!Number.isFinite(amount) || amount <= 0)
+      if (!Number.isFinite(amount) || amount <= 0) {
         return alert("金額を1円以上で入れてください。");
+      }
+
       const e = {
-        id: crypto.randomUUID
-          ? crypto.randomUUID()
-          : Date.now() + "-" + Math.random(),
+        id:
+          typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : Date.now() + "-" + Math.random(),
         type: currentType,
         amount,
         date,
         memo,
         createdAt: new Date().toISOString(),
       };
+
       if (currentType === "expense") {
         e.category = $("category").value;
         e.judge = currentJudge;
         e.account = $("expenseAccount").value;
       }
+
       if (currentType === "income") {
         e.category = $("incomeCategory").value;
         e.account = $("incomeAccount").value;
       }
+
       if (currentType === "transfer") {
         e.fromAccount = $("fromAccount").value;
         e.toAccount = $("toAccount").value;
-        if (e.fromAccount === e.toAccount)
+        if (e.fromAccount === e.toAccount) {
           return alert("移動元と移動先は別にしてください。");
+        }
       }
+
       state.entries.unshift(e);
       persist();
       $("amount").value = "";
       $("shop").value = "";
       render();
     }
+
     function balances(entries = state.entries) {
       const b = { ...state.initialBalances };
       [...entries]
@@ -990,6 +1330,10 @@ for (let i = 0; i <= tickCount; i++) {
           if (!x || !x.initialBalances || !Array.isArray(x.entries)) throw 0;
           state = x;
 
+if (!Array.isArray(state.recurringExpenses)) {
+  state.recurringExpenses = [];
+}
+
 if (!state.initialBalanceSetAt) {
   const hasInitialBalance = Object.values(state.initialBalances).some(
     (value) => Number(value) !== 0,
@@ -1032,6 +1376,20 @@ render();
         b.addEventListener("click", () => setJudge(b.dataset.judge)),
       );
     $("saveButton").addEventListener("click", saveEntry);
+    $("recurringFrequency").addEventListener(
+  "change",
+      renderRecurringFrequency,
+);
+
+document
+  .querySelectorAll(".recurring-judge-button")
+  .forEach((button) => {
+    button.addEventListener("click", () => {
+      setRecurringJudge(
+        button.dataset.recurringJudge,
+      );
+    });
+  });
 
 $("editBalances").addEventListener("click", () => {
   balanceEditOpen = true;
@@ -1103,7 +1461,7 @@ balanceInputs();
 renderBalanceSetting();
 setType("expense");
 setJudge("必要");
-
+setRecurringJudge("経費");
 render();
   })();
 </script>
