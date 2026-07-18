@@ -260,6 +260,13 @@ canvas{
   gap:8px
 }
 
+  .balance-edit-actions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:12px;
+}
+ 
 @media(max-width:560px){
   .grid,
   .summary-grid,
@@ -332,7 +339,39 @@ canvas{
     <div class="metric wide"><span class="label">総資産</span><strong id="totalBalance">¥0</strong></div>
   </div></section>
 
-  <section class="card"><h2>初期残高の設定</h2><p class="sub">このアプリを使い始める時点の金額を入れる。</p><div id="balanceInputs"></div><button type="button" id="saveBalances">初期残高を保存</button></section>
+  <section class="card">
+  <h2>初期残高の設定</h2>
+
+  <!-- 設定済みのときに表示 -->
+  <div id="balanceStatus" class="hidden">
+    <p style="margin:0 0 6px;font-weight:800;">初期残高　設定済み</p>
+    <p class="sub" style="margin:0 0 14px;">
+      設定日：<span id="balanceSetDate"></span>
+    </p>
+    <button type="button" class="secondary" id="editBalances">
+      変更する
+    </button>
+  </div>
+
+  <!-- 未設定時、または「変更する」を押したときに表示 -->
+  <div id="balanceEditor" class="hidden">
+    <p class="sub">
+      このアプリを使い始める時点の金額を入れる。
+      初期残高を変更すると、現在の資産額や過去の資産推移も変わります。
+    </p>
+
+    <div id="balanceInputs"></div>
+
+    <div class="balance-edit-actions">
+      <button type="button" class="secondary" id="cancelBalances">
+        キャンセル
+      </button>
+      <button type="button" id="saveBalances">
+        変更を保存
+      </button>
+    </div>
+  </div>
+</section>
   <section class="card"><h2>最近の記録</h2><div id="entryList"></div></section>
   <section class="card"><h2>バックアップ</h2><div class="actions"><button type="button" class="secondary" id="exportButton">書き出す</button><button type="button" class="secondary" id="importButton">読み込む</button><button type="button" class="danger" id="clearButton">全削除</button></div><input id="importFile" type="file" accept="application/json" class="hidden"><p class="note">データはこの端末のブラウザ内に保存されます。</p></section>
 </main>
@@ -362,13 +401,20 @@ canvas{
       saving: "#4f765c",
       cashbox: "#8b6f9a",
     };
-    const empty = () => ({
-      initialBalances: { wallet: 0, ordinary: 0, saving: 0, cashbox: 0 },
-      entries: [],
-    });
-    let state = load(),
-      currentType = "expense",
-      currentJudge = "必要";
+const empty = () => ({
+  initialBalances: {
+    wallet: 0,
+    ordinary: 0,
+    saving: 0,
+    cashbox: 0,
+  },
+  initialBalanceSetAt: null,
+  entries: [],
+});
+let state = load(),
+  currentType = "expense",
+  currentJudge = "必要",
+  balanceEditOpen = false;
     const $ = (id) => document.getElementById(id);
     const yen = (v) =>
       new Intl.NumberFormat("ja-JP", {
@@ -381,13 +427,31 @@ canvas{
       return new Date(d - o).toISOString().slice(0, 10);
     }
     function load() {
-      try {
-        const s = JSON.parse(localStorage.getItem(KEY));
-        return s && s.initialBalances && Array.isArray(s.entries) ? s : empty();
-      } catch {
-        return empty();
-      }
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+
+    if (!s || !s.initialBalances || !Array.isArray(s.entries)) {
+      return empty();
     }
+
+    /*
+      以前のバージョンですでに初期残高を入力していた場合、
+      設定日の項目が存在しないので、現在の日付を設定日として補完する。
+    */
+    if (!s.initialBalanceSetAt) {
+      const hasInitialBalance = Object.values(s.initialBalances).some(
+        (value) => Number(value) !== 0,
+      );
+
+      s.initialBalanceSetAt = hasInitialBalance ? today() : null;
+      localStorage.setItem(KEY, JSON.stringify(s));
+    }
+
+    return s;
+  } catch {
+    return empty();
+  }
+}
     function persist() {
       localStorage.setItem(KEY, JSON.stringify(state));
     }
@@ -412,6 +476,52 @@ canvas{
           `<div class="balance-row"><div><label for="balance-${a.id}">${a.name}</label><input id="balance-${a.id}" type="number" inputmode="numeric" value="${Number(state.initialBalances[a.id]) || 0}"></div><strong id="preview-${a.id}">${yen(balances()[a.id])}</strong></div>`,
       ).join("");
     }
+
+    function formatJapaneseDate(dateString) {
+  if (!dateString) return "";
+
+  const [year, month, day] = dateString.split("-");
+  return `${year}/${month}/${day}`;
+}
+
+function renderBalanceSetting() {
+  const isSet = Boolean(state.initialBalanceSetAt);
+
+  /*
+    未設定なら編集欄を表示。
+    設定済みなら通常は「設定済み」表示だけにする。
+  */
+  const showEditor = !isSet || balanceEditOpen;
+
+  $("balanceStatus").classList.toggle(
+    "hidden",
+    !isSet || balanceEditOpen,
+  );
+
+  $("balanceEditor").classList.toggle(
+    "hidden",
+    !showEditor,
+  );
+
+  if (isSet) {
+    $("balanceSetDate").textContent =
+      formatJapaneseDate(state.initialBalanceSetAt);
+
+    $("saveBalances").textContent = "変更を保存";
+  } else {
+    $("saveBalances").textContent = "初期残高を保存";
+  }
+
+  /*
+    未設定時はキャンセルして戻る場所がないため、
+    キャンセルボタンを隠す。
+  */
+  $("cancelBalances").classList.toggle(
+    "hidden",
+    !isSet,
+  );
+}
+    
     function setType(t) {
       currentType = t;
       document
@@ -689,15 +799,35 @@ canvas{
       charts();
     }
     function saveBalances() {
-      ACCOUNTS.forEach(
-        (a) =>
-          (state.initialBalances[a.id] =
-            Number($("balance-" + a.id).value) || 0),
-      );
-      persist();
-      render();
-      alert("初期残高を保存しました。");
-    }
+  const isChanging = Boolean(state.initialBalanceSetAt);
+
+  if (
+    isChanging &&
+    !confirm(
+      "初期残高を変更しますか？\n現在の資産額や過去の資産推移も変わります。",
+    )
+  ) {
+    return;
+  }
+
+  ACCOUNTS.forEach((account) => {
+    state.initialBalances[account.id] =
+      Number($("balance-" + account.id).value) || 0;
+  });
+
+  state.initialBalanceSetAt = today();
+  balanceEditOpen = false;
+
+  persist();
+  renderBalanceSetting();
+  render();
+
+  alert(
+    isChanging
+      ? "初期残高を変更しました。"
+      : "初期残高を保存しました。",
+  );
+}
     function exportData() {
       const blob = new Blob([JSON.stringify(state, null, 2)], {
           type: "application/json",
@@ -744,8 +874,31 @@ canvas{
         b.addEventListener("click", () => setJudge(b.dataset.judge)),
       );
     $("saveButton").addEventListener("click", saveEntry);
-    $("saveBalances").addEventListener("click", saveBalances);
-    $("exportButton").addEventListener("click", exportData);
+
+$("editBalances").addEventListener("click", () => {
+  balanceEditOpen = true;
+
+  /*
+    編集を開くたびに、保存済みの金額を入力欄へ戻す。
+  */
+  balanceInputs();
+  renderBalanceSetting();
+});
+
+$("cancelBalances").addEventListener("click", () => {
+  balanceEditOpen = false;
+
+  /*
+    入力途中の変更内容を破棄し、
+    保存されている値へ戻す。
+  */
+  balanceInputs();
+  renderBalanceSetting();
+});
+
+$("saveBalances").addEventListener("click", saveBalances);
+
+$("exportButton").addEventListener("click", exportData);
     $("importButton").addEventListener("click", () => $("importFile").click());
     $("clearButton").addEventListener("click", clearAll);
     $("importFile").addEventListener("change", (e) => {
@@ -768,10 +921,11 @@ canvas{
       window._rt = setTimeout(charts, 120);
     });
     init();
-    balanceInputs();
-    setType("expense");
-    setJudge("必要");
-    render();
+balanceInputs();
+renderBalanceSetting();
+setType("expense");
+setJudge("必要");
+render();
   })();
 </script>
 
