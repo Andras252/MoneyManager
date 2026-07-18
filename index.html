@@ -684,7 +684,7 @@ function renderBalanceSetting() {
         (i) => i.dataset.series,
       );
     }
-    function chart(canvas, data, series, colors) {
+    function chart(canvas, data, series, colors, startAtZero = false) {
       const dpr = devicePixelRatio || 1,
         r = canvas.getBoundingClientRect(),
         w = Math.max(320, r.width),
@@ -695,15 +695,42 @@ function renderBalanceSetting() {
       const c = canvas.getContext("2d");
       c.scale(dpr, dpr);
       c.clearRect(0, 0, w, h);
-      const cw = w - p.l - p.r,
-        ch = h - p.t - p.b,
-        vals = data.flatMap((row) => series.map((s) => Number(row[s]) || 0)),
-        max = Math.max(...vals, 1),
-        min = Math.min(...vals, 0),
-        range = Math.max(max - min, 1),
-        hi = max + range * 0.1,
-        lo = min - range * 0.1,
-        x = (i) =>
+     const cw = w - p.l - p.r,
+  ch = h - p.t - p.b,
+  vals = data.flatMap((row) =>
+    series.map((s) => Number(row[s]) || 0),
+  ),
+
+  /*
+    チェック項目がすべて外れている場合にも
+    計算が壊れないよう、仮に0を使う。
+  */
+  safeVals = vals.length ? vals : [0],
+
+  rawMax = Math.max(...safeVals),
+  rawMin = Math.min(...safeVals),
+
+  /*
+    月別収支グラフは最低値に0円を含める。
+    資産推移グラフは実際の最低資産額を使う。
+  */
+  min = startAtZero
+    ? Math.min(rawMin, 0)
+    : rawMin,
+
+  range = Math.max(rawMax - min, 1),
+  hi = rawMax + range * 0.1,
+
+  /*
+    月別収支は0円スタート。
+    資産推移は最低資産額より10％分だけ下から始める。
+  */
+  lo =
+    startAtZero && rawMin >= 0
+      ? 0
+      : rawMin - range * 0.1,
+
+  x = (i) =>
           p.l + (data.length === 1 ? cw / 2 : (i * cw) / (data.length - 1)),
         y = (v) => p.t + ((hi - v) * ch) / (hi - lo);
       c.font = "12px system-ui";
@@ -751,9 +778,30 @@ function renderBalanceSetting() {
       });
     }
     function charts() {
-      chart($("flowChart"), flowData(), selected("flowControls"), FLOW);
-      chart($("assetChart"), assetData(), selected("assetControls"), ASSET);
-    }
+  /*
+    月別収支グラフ
+    trueを渡しているので0円スタート
+  */
+  chart(
+    $("flowChart"),
+    flowData(),
+    selected("flowControls"),
+    FLOW,
+    true,
+  );
+
+  /*
+    資産推移グラフ
+    falseを渡しているので、資産額の近辺からスタート
+  */
+  chart(
+    $("assetChart"),
+    assetData(),
+    selected("assetControls"),
+    ASSET,
+    false,
+  );
+}
     function accountName(id) {
       return ACCOUNTS.find((a) => a.id === id)?.name || id;
     }
