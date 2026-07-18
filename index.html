@@ -321,7 +321,7 @@ canvas{
     <div class="metric"><span class="label">必要</span><strong id="monthNeed">¥0</strong></div>
     <div class="metric"><span class="label">経費</span><strong id="monthCost">¥0</strong></div>
   </div></section>
-
+  <section class="card"><h2>最近の記録</h2><div id="entryList"></div></section>
   <section class="card"><h2>月別収支グラフ</h2><div class="chart-controls" id="flowControls">
     <label><input type="checkbox" data-series="income" checked>収入</label><label><input type="checkbox" data-series="expense" checked>支出</label><label><input type="checkbox" data-series="waste" checked>浪費</label><label><input type="checkbox" data-series="need">必要</label><label><input type="checkbox" data-series="cost">経費</label>
   </div><canvas id="flowChart"></canvas></section>
@@ -372,7 +372,7 @@ canvas{
     </div>
   </div>
 </section>
-  <section class="card"><h2>最近の記録</h2><div id="entryList"></div></section>
+
   <section class="card"><h2>バックアップ</h2><div class="actions"><button type="button" class="secondary" id="exportButton">書き出す</button><button type="button" class="secondary" id="importButton">読み込む</button><button type="button" class="danger" id="clearButton">全削除</button></div><input id="importFile" type="file" accept="application/json" class="hidden"><p class="note">データはこの端末のブラウザ内に保存されます。</p></section>
 </main>
 <script>
