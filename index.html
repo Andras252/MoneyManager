@@ -736,38 +736,42 @@ function niceTickStep(maxValue, tickCount = 4) {
   rawMax = Math.max(...safeVals),
 
 /*
-  縦軸を4段階に分ける。
-  1段あたり最低1円の整数にする。
+  1・2・5・10・20・50・100……から
+  データに合う目盛り幅を選ぶ。
 */
-tickStep = Math.max(
-  1,
-  Math.ceil(rawMax / 4),
+tickStep = niceTickStep(rawMax, 4),
+
+/*
+  最大値を収められる、切りのいい上限にする。
+*/
+hi = Math.max(
+  tickStep * 4,
+  Math.ceil(rawMax / tickStep) * tickStep,
 ),
 
 /*
-  最大値が一番上と同じになった場合は、
-  さらに1段分上へ広げる。
+  最大値が上端にぴったり張り付いたら、
+  1目盛り分だけ上へ広げる。
 */
-hi =
-  rawMax >= tickStep * 4
-    ? tickStep * 5
-    : tickStep * 4,
+displayHi =
+  rawMax >= hi
+    ? hi + tickStep
+    : hi,
 
-/*
-  どちらのグラフも0円スタート。
-*/
 lo = 0,
 
 x = (i) =>
           p.l + (data.length === 1 ? cw / 2 : (i * cw) / (data.length - 1)),
-        y = (v) => p.t + ((hi - v) * ch) / (hi - lo);
+        y = (v) => p.t + ((displayHi - v) * ch) / (displayHi - lo);
       c.font = "12px system-ui";
       c.lineWidth = 1; // グラフ内の補助線と軸ラベルの色
       c.strokeStyle = "#e6dfd6";
       c.fillStyle = "#77716a";
-      for (let i = 0; i <= 4; i++) {
-        const v = hi - ((hi - lo) * i) / 4,
-          yy = p.t + (ch * i) / 4;
+      const tickCount = displayHi / tickStep;
+
+for (let i = 0; i <= tickCount; i++) {
+  const v = displayHi - tickStep * i,
+    yy = p.t + (ch * i) / tickCount;
         c.beginPath();
         c.moveTo(p.l, yy);
         c.lineTo(w - p.r, yy);
