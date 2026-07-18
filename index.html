@@ -312,6 +312,82 @@ canvas{
   margin-top:14px;
 }
   
+.recurring-card{
+  padding:14px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.recurring-card:last-child{
+  border-bottom:0;
+  padding-bottom:0;
+}
+
+.recurring-card:first-child{
+  padding-top:0;
+}
+
+.recurring-card-head{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  align-items:start;
+}
+
+.recurring-card-title{
+  font-weight:900;
+  overflow-wrap:anywhere;
+}
+
+.recurring-card-amount{
+  font-weight:900;
+  white-space:nowrap;
+}
+
+.recurring-card-meta{
+  margin-top:5px;
+  color:var(--muted);
+  font-size:.82rem;
+  line-height:1.55;
+}
+
+.recurring-card-actions{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  margin-top:10px;
+}
+
+.recurring-card-actions button{
+  min-height:40px;
+}
+
+.recurring-delete-button{
+  width:auto;
+  min-width:72px;
+}
+
+.recurring-register-button.registered{
+  background:#e7eee5;
+  color:var(--good);
+  cursor:default;
+}
+
+.recurring-register-button.out-of-period{
+  background:#eeeeea;
+  color:var(--muted);
+  cursor:default;
+}
+
+@media(max-width:560px){
+  .recurring-card-actions{
+    grid-template-columns:1fr;
+  }
+
+  .recurring-delete-button{
+    width:100%;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -462,6 +538,15 @@ canvas{
 </div>
 
     </div>
+  </section>
+
+
+  <section class="card">
+    <h2>登録済み固定費</h2>
+    <p class="note">
+      「今月分を登録」「今年分を登録」を押したときだけ、通常の支出として記録されます。
+    </p>
+    <div id="recurringExpenseList"></div>
   </section>
 
   <section class="card"><h2>今月の浪費／支出</h2><div class="summary-grid">
@@ -890,6 +975,13 @@ function setRecurringJudge(judge) {
     return alert("金額を1円以上で入れてください。");
   }
 
+  const startMonth = $("recurringStartMonth").value || null;
+  const endMonth = $("recurringEndMonth").value || null;
+
+  if (startMonth && endMonth && startMonth > endMonth) {
+    return alert("終了年月は開始年月以降にしてください。");
+  }
+
   const recurringExpense = {
     id:
       typeof crypto.randomUUID === "function"
@@ -922,11 +1014,8 @@ function setRecurringJudge(judge) {
     /*
       空欄なら、すでに支払い中・終了予定なし。
     */
-    startMonth:
-      $("recurringStartMonth").value || null,
-
-    endMonth:
-      $("recurringEndMonth").value || null,
+    startMonth,
+    endMonth,
 
     enabled: true,
     createdAt: new Date().toISOString(),
@@ -941,6 +1030,7 @@ function setRecurringJudge(judge) {
   $("recurringStartMonth").value = "";
   $("recurringEndMonth").value = "";
 
+  render();
   alert("固定費を登録しました。");
 }
     function saveEntry() {
@@ -1276,9 +1366,234 @@ for (let i = 0; i <= tickCount; i++) {
 
 
     
+
+    function recurringTargetInfo(item) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
+      if (item.frequency === "yearly") {
+        const month = Number(item.paymentMonth);
+        return {
+          period: String(year),
+          targetMonth: `${year}-${String(month).padStart(2, "0")}`,
+          buttonLabel: `${year}年分を登録`,
+          registeredLabel: `✓ ${year}年分 登録済み`,
+          date: makeSafeDate(year, month, Number(item.paymentDay)),
+        };
+      }
+
+      return {
+        period: `${year}-${String(currentMonth).padStart(2, "0")}`,
+        targetMonth: `${year}-${String(currentMonth).padStart(2, "0")}`,
+        buttonLabel: `${currentMonth}月分を登録`,
+        registeredLabel: `✓ ${currentMonth}月分 登録済み`,
+        date: makeSafeDate(year, currentMonth, Number(item.paymentDay)),
+      };
+    }
+
+    function makeSafeDate(year, month, day) {
+      const lastDay = new Date(year, month, 0).getDate();
+      const safeDay = Math.min(Math.max(Number(day) || 1, 1), lastDay);
+
+      return `${year}-${String(month).padStart(2, "0")}-${String(
+        safeDay,
+      ).padStart(2, "0")}`;
+    }
+
+    function isRecurringInPeriod(item, targetMonth) {
+      if (item.startMonth && targetMonth < item.startMonth) {
+        return false;
+      }
+
+      if (item.endMonth && targetMonth > item.endMonth) {
+        return false;
+      }
+
+      return item.enabled !== false;
+    }
+
+    function isRecurringRegistered(item, period) {
+      return state.entries.some(
+        (entry) =>
+          entry.type === "expense" &&
+          entry.recurringExpenseId === item.id &&
+          entry.recurringPeriod === period,
+      );
+    }
+
+    function recurringScheduleText(item) {
+      if (item.frequency === "yearly") {
+        return `毎年${Number(item.paymentMonth)}月${Number(
+          item.paymentDay,
+        )}日`;
+      }
+
+      return `毎月${Number(item.paymentDay)}日`;
+    }
+
+    function recurringPeriodText(item) {
+      if (!item.startMonth && !item.endMonth) {
+        return "";
+      }
+
+      const start = item.startMonth || "指定なし";
+      const end = item.endMonth || "指定なし";
+      return ` ・ 利用期間 ${start}〜${end}`;
+    }
+
+    function renderRecurringExpenses() {
+      const list = $("recurringExpenseList");
+      const items = state.recurringExpenses || [];
+
+      if (!items.length) {
+        list.innerHTML =
+          '<div class="empty">まだ固定費が登録されていません。</div>';
+        return;
+      }
+
+      list.innerHTML = items
+        .map((item) => {
+          const target = recurringTargetInfo(item);
+          const registered = isRecurringRegistered(item, target.period);
+          const inPeriod = isRecurringInPeriod(item, target.targetMonth);
+
+          let registerClass = "";
+          let registerLabel = target.buttonLabel;
+          let disabled = "";
+
+          if (registered) {
+            registerClass = " registered";
+            registerLabel = target.registeredLabel;
+            disabled = " disabled";
+          } else if (!inPeriod) {
+            registerClass = " out-of-period";
+            registerLabel = "利用期間外";
+            disabled = " disabled";
+          }
+
+          return `
+            <div class="recurring-card">
+              <div class="recurring-card-head">
+                <div class="recurring-card-title">${esc(item.name)}</div>
+                <div class="recurring-card-amount">${yen(item.amount)}</div>
+              </div>
+
+              <div class="recurring-card-meta">
+                ${esc(recurringScheduleText(item))}
+                ・ ${esc(item.category)}
+                ・ ${esc(item.judge)}
+                ・ ${esc(accountName(item.account))}
+                ${esc(recurringPeriodText(item))}
+              </div>
+
+              <div class="recurring-card-actions">
+                <button
+                  type="button"
+                  class="recurring-register-button${registerClass}"
+                  data-id="${esc(item.id)}"
+                  ${disabled}
+                >
+                  ${esc(registerLabel)}
+                </button>
+
+                <button
+                  type="button"
+                  class="danger recurring-delete-button"
+                  data-id="${esc(item.id)}"
+                >
+                  削除
+                </button>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    function registerRecurringExpense(id) {
+      const item = state.recurringExpenses.find((x) => x.id === id);
+
+      if (!item) {
+        return alert("固定費の設定が見つかりません。");
+      }
+
+      const target = recurringTargetInfo(item);
+
+      if (!isRecurringInPeriod(item, target.targetMonth)) {
+        return alert("この固定費は現在、利用期間外です。");
+      }
+
+      if (isRecurringRegistered(item, target.period)) {
+        return alert("この期間分はすでに登録されています。");
+      }
+
+      const periodLabel =
+        item.frequency === "yearly"
+          ? `${target.period}年分`
+          : `${Number(target.period.slice(5, 7))}月分`;
+
+      if (
+        !confirm(
+          `${item.name}の${periodLabel}を支出へ登録しますか？\n` +
+            `日付：${target.date}\n金額：${yen(item.amount)}`,
+        )
+      ) {
+        return;
+      }
+
+      state.entries.unshift({
+        id:
+          typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : Date.now() + "-" + Math.random(),
+
+        type: "expense",
+        amount: Number(item.amount),
+        date: target.date,
+        memo: item.name,
+        category: item.category,
+        judge: item.judge,
+        account: item.account,
+
+        recurringExpenseId: item.id,
+        recurringPeriod: target.period,
+
+        createdAt: new Date().toISOString(),
+      });
+
+      persist();
+      render();
+    }
+
+    function deleteRecurringExpense(id) {
+      const item = state.recurringExpenses.find((x) => x.id === id);
+
+      if (!item) {
+        return;
+      }
+
+      if (
+        !confirm(
+          `固定費「${item.name}」の設定を削除しますか？\n` +
+            "すでに支出へ登録した記録は削除されません。",
+        )
+      ) {
+        return;
+      }
+
+      state.recurringExpenses = state.recurringExpenses.filter(
+        (x) => x.id !== id,
+      );
+
+      persist();
+      render();
+    }
+
     function render() {
       summary();
       entries();
+      renderRecurringExpenses();
       charts();
     }
     function saveBalances() {
@@ -1442,6 +1757,26 @@ $("exportButton").addEventListener("click", exportData);
       if (f) importData(f);
       e.target.value = "";
     });
+
+    $("recurringExpenseList").addEventListener("click", (event) => {
+      const registerButton = event.target.closest(
+        ".recurring-register-button",
+      );
+
+      if (registerButton && !registerButton.disabled) {
+        registerRecurringExpense(registerButton.dataset.id);
+        return;
+      }
+
+      const deleteButton = event.target.closest(
+        ".recurring-delete-button",
+      );
+
+      if (deleteButton) {
+        deleteRecurringExpense(deleteButton.dataset.id);
+      }
+    });
+
     $("entryList").addEventListener("click", (e) => {
       const b = e.target.closest(".delete-entry");
       if (!b || !confirm("この記録を削除しますか？")) return;
