@@ -542,11 +542,27 @@ canvas{
 
 
   <section class="card">
-    <h2>登録済み固定費</h2>
-    <p class="note">
-      「今月分を登録」「今年分を登録」を押したときだけ、通常の支出として記録されます。
-    </p>
-    <div id="recurringExpenseList"></div>
+    <div class="asset-heading">
+      <h2>登録済み固定費</h2>
+
+      <button
+        type="button"
+        id="recurringToggleButton"
+        class="asset-toggle-button"
+        aria-expanded="false"
+        aria-controls="recurringExpenseContents"
+        aria-label="登録済み固定費を開く"
+      >
+        ▼
+      </button>
+    </div>
+
+    <div id="recurringExpenseContents" class="hidden">
+      <p class="note">
+        「今月分を登録」「今年分を登録」を押したときだけ、通常の支出として記録されます。
+      </p>
+      <div id="recurringExpenseList"></div>
+    </div>
   </section>
 
   <section class="card"><h2>今月の浪費／支出</h2><div class="summary-grid">
@@ -1747,6 +1763,28 @@ $("assetToggleButton").addEventListener("click", () => {
     isOpening
       ? "現在の資産を閉じる"
       : "現在の資産を開く",
+  );
+});
+
+$("recurringToggleButton").addEventListener("click", () => {
+  const contents = $("recurringExpenseContents");
+  const button = $("recurringToggleButton");
+
+  const isOpening = contents.classList.contains("hidden");
+
+  contents.classList.toggle("hidden", !isOpening);
+  button.classList.toggle("open", isOpening);
+
+  button.setAttribute(
+    "aria-expanded",
+    String(isOpening),
+  );
+
+  button.setAttribute(
+    "aria-label",
+    isOpening
+      ? "登録済み固定費を閉じる"
+      : "登録済み固定費を開く",
   );
 });
 $("exportButton").addEventListener("click", exportData);
